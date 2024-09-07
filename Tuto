@@ -1,34 +1,85 @@
--- URL do código externo do ESP
-local espScriptURL = "https://gist.githubusercontent.com/SeuUsuario/SeuGistID/raw/espScript.lua"
-
--- Carregar e executar o código externo
-local function loadExternalScript(url)
-    local response = game:HttpGet(url)
-    local scriptFunction = loadstring(response)
-    if scriptFunction then
-        scriptFunction()
-    else
-        warn("Falha ao carregar o script de ESP.")
-    end
-end
-
--- Carregar o Orion UI
+-- URL do código do Orion
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/Source"))()
-local Window = OrionLib:MakeWindow({Name = "Meu Hub", Icon = "rbxassetid://1234567890", HidePremium = false})
 
+-- Cria a janela do Orion
+local Window = OrionLib:MakeWindow({
+    Name = "Aimbot Hub",
+    Icon = "rbxassetid://1234567890", -- Coloque o ID do ícone desejado aqui
+    HidePremium = false
+})
+
+-- Cria uma aba no hub
 local Tab = Window:MakeTab({
-    Name = "Funções",
+    Name = "Aimbot",
     PremiumOnly = false
 })
 
+-- Adiciona um botão para ativar/desativar o aimbot
 Tab:AddButton({
-    Name = "Ativar ESP",
+    Name = "Ativar Aimbot",
     Callback = function()
-        loadExternalScript(espScriptURL)
-        OrionLib:MakeNotification({
-            Name = "ESP Ativado",
-            Content = "O ESP foi ativado com sucesso!",
-            Image = "rbxassetid://1234567890"
+        local aimbotActive = not _G.aimbot
+        _G.aimbot = aimbotActive
+
+        -- Atualiza o status do botão
+        local buttonText = aimbotActive and "Desativar Aimbot" or "Ativar Aimbot"
+        local buttonColor = aimbotActive and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(255, 0, 0)
+        Tab:UpdateButton({
+            Name = buttonText,
+            TextColor3 = buttonColor
         })
-    end    
+
+        -- Mensagem de notificação
+        OrionLib:MakeNotification({
+            Name = "Aimbot " .. (aimbotActive and "Ativado" or "Desativado"),
+            Content = "O aimbot foi " .. (aimbotActive and "ativado" or "desativado") .. ".",
+            Image = "rbxassetid://1234567890" -- Coloque o ID da imagem desejada aqui
+        })
+    end
 })
+
+-- Script do Aimbot
+local camera = game.Workspace.CurrentCamera
+local localplayer = game:GetService("Players").LocalPlayer
+local team = localplayer.Team
+
+local function closestplayer()
+    local dist = math.huge
+    local target = nil
+    for _, v in pairs(game:GetService("Players"):GetPlayers()) do
+        if v ~= localplayer and v.Team == team then
+            if v.Character and v.Character:FindFirstChild("Head") and _G.aimbot and v.Character.Humanoid.Health > 0 then
+                local magnitude = (v.Character.Head.Position - localplayer.Character.Head.Position).magnitude
+                if magnitude < dist then
+                    dist = magnitude
+                    target = v
+                end
+            end
+        end
+    end
+    return target
+end
+
+local UIS = game:GetService("UserInputService")
+local aiming = false
+
+UIS.InputBegan:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+        aiming = true
+    end
+end)
+
+UIS.InputEnded:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+        aiming = false
+    end
+end)
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if aiming and _G.aimbot then
+        local target = closestplayer()
+        if target then
+            camera.CFrame = CFrame.new(camera.CFrame.Position, target.Character.Head.Position)
+        end
+    end
+end)
