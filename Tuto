@@ -1,0 +1,34 @@
+-- URL do código externo do ESP
+local espScriptURL = "https://gist.githubusercontent.com/SeuUsuario/SeuGistID/raw/espScript.lua"
+
+-- Carregar e executar o código externo
+local function loadExternalScript(url)
+    local response = game:HttpGet(url)
+    local scriptFunction = loadstring(response)
+    if scriptFunction then
+        scriptFunction()
+    else
+        warn("Falha ao carregar o script de ESP.")
+    end
+end
+
+-- Carregar o Orion UI
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/Source"))()
+local Window = OrionLib:MakeWindow({Name = "Meu Hub", Icon = "rbxassetid://1234567890", HidePremium = false})
+
+local Tab = Window:MakeTab({
+    Name = "Funções",
+    PremiumOnly = false
+})
+
+Tab:AddButton({
+    Name = "Ativar ESP",
+    Callback = function()
+        loadExternalScript(espScriptURL)
+        OrionLib:MakeNotification({
+            Name = "ESP Ativado",
+            Content = "O ESP foi ativado com sucesso!",
+            Image = "rbxassetid://1234567890"
+        })
+    end    
+})
